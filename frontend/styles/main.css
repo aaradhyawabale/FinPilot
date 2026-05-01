@@ -132,19 +132,6 @@
   .sim-slider-val { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--accent); }
   input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 
-  /* Subscription items */
-  .sub-item { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 10px; transition: border-color 0.2s; }
-  .sub-item:hover { border-color: var(--border2); }
-  .sub-logo { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
-  .sub-name { font-size: 14px; font-weight: 500; color: var(--text); }
-  .sub-cost { font-family: 'Space Mono', monospace; font-size: 13px; color: var(--text2); margin-top: 2px; }
-  .sub-actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
-  .toggle { position: relative; width: 38px; height: 20px; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider { position: absolute; inset: 0; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: 0.2s; }
-  .toggle input:checked + .toggle-slider { background: var(--accent); }
-  .toggle-slider:before { content: ''; position: absolute; width: 14px; height: 14px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; }
-  .toggle input:checked + .toggle-slider:before { transform: translateX(18px); }
 
   /* Goal card */
   .goal-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }

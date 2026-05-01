@@ -14,7 +14,6 @@ const userSchema = new mongoose.Schema({
     entertainment: { type: Number, default: 0 },
     other:         { type: Number, default: 0 }
   },
-  subscriptionTotal: { type: Number, default: 0 },
   riskAppetite: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' }
 }, { timestamps: true });
 

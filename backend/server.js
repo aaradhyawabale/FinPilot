@@ -15,7 +15,6 @@ app.use(express.json());
 
 app.use("/api/user", require("./routes/userRoutes"));
 app.use("/api/expenses", require("./routes/expenseRoutes"));
-app.use("/api/subscriptions", require("./routes/subscriptionRoutes"));
 app.use("/api/goals", require("./routes/goalRoutes"));
 app.use("/api/analysis", require("./routes/analysisRoutes"));
 

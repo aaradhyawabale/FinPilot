@@ -53,10 +53,6 @@
         <label class="form-label">Other Expenses (₹)</label>
         <input type="number" class="form-input" id="ob-other" placeholder="0">
       </div>
-      <div class="form-group">
-        <label class="form-label">Total Subscriptions/mo (₹)</label>
-        <input type="number" class="form-input" id="ob-subs" placeholder="0">
-      </div>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -93,9 +89,6 @@
       <div class="nav-section">Planning</div>
       <div class="nav-item" onclick="showPage('goals',this)">
         <span class="nav-icon">◎</span> Goals
-      </div>
-      <div class="nav-item" onclick="showPage('subscriptions',this)">
-        <span class="nav-icon">◫</span> Subscriptions
       </div>
       <div class="nav-section">Insights</div>
       <div class="nav-item" onclick="showPage('investment',this)">
@@ -313,66 +306,6 @@
       <div class="grid-3" id="goal-cards"></div>
     </div>
 
-    <!-- SUBSCRIPTIONS -->
-    <div id="page-subscriptions" class="page">
-      <div class="page-header">
-        <div class="page-title">Subscription Tracker</div>
-        <div class="page-subtitle">Monitor recurring payments and eliminate waste</div>
-      </div>
-
-      <div class="grid-3" style="margin-bottom:20px;">
-        <div class="card">
-          <div class="card-title">Active Subscriptions</div>
-          <div class="card-value" id="sub-active-count" style="color: var(--accent2)">—</div>
-          <div class="card-sub" id="sub-active-cost">₹0/month</div>
-        </div>
-        <div class="card">
-          <div class="card-title">Unused Subscriptions</div>
-          <div class="card-value" id="sub-unused-count" style="color: var(--danger)">—</div>
-          <div class="card-sub" id="sub-unused-cost">₹0 wasted/month</div>
-        </div>
-        <div class="card">
-          <div class="card-title">Annual Cost</div>
-          <div class="card-value" id="sub-annual" style="color: var(--warn)">₹—</div>
-          <div class="card-sub">All active subscriptions</div>
-        </div>
-      </div>
-
-      <div class="card" style="margin-bottom:20px;">
-        <div class="section-title" style="margin-bottom:16px;">Add Subscription</div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Service Name</label>
-            <input type="text" class="form-input" id="sub-name" placeholder="e.g. Netflix, Spotify">
-          </div>
-          <div class="form-group" style="max-width:150px;">
-            <label class="form-label">Monthly Cost (₹)</label>
-            <input type="number" class="form-input" id="sub-cost" placeholder="199">
-          </div>
-          <div class="form-group" style="max-width:130px;">
-            <label class="form-label">Category</label>
-            <select class="form-select" id="sub-cat">
-              <option value="entertainment">Entertainment</option>
-              <option value="productivity">Productivity</option>
-              <option value="education">Education</option>
-              <option value="health">Health</option>
-              <option value="other">Other</option>
-            </select>
-          </div>
-          <div class="form-group" style="max-width:100px; display:flex; align-items:flex-end;">
-            <button class="btn btn-primary" style="width:100%" onclick="addSubscription()">Add</button>
-          </div>
-        </div>
-      </div>
-
-      <div id="sub-warning" class="alert alert-warn" style="display:none;">
-        <span>⚠</span>
-        <div id="sub-warning-text"></div>
-      </div>
-
-      <div class="section-title" style="margin-bottom:12px;">Your Subscriptions</div>
-      <div id="sub-list"></div>
-    </div>
 
     <!-- INVESTMENT -->
     <div id="page-investment" class="page">

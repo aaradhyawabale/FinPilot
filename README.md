@@ -87,7 +87,7 @@ Open:
 
 1. User fills financial profile on the frontend.
 2. Frontend shows dashboards and calculators.
-3. Backend provides CRUD APIs for users, expenses, goals, subscriptions, and analysis.
+3. Backend provides CRUD APIs for users, expenses, goals, and analysis.
 4. Financial formulas are applied using rule-based logic from `ai/advisorEngine.js`.
 5. MongoDB stores user data and transactions.
 

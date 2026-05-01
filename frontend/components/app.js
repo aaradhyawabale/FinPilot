@@ -7,11 +7,9 @@ let state = {
   name: 'Student',
   income: 0,
   expenses: { food: 0, travel: 0, shopping: 0, entertainment: 0, other: 0 },
-  subscriptions: 0,
   risk: 'medium',
   expenseLog: [],
-  goals: [],
-  subs: []
+  goals: []
 };
 
 let charts = {};
@@ -21,7 +19,7 @@ let charts = {};
 // =============================================
 const advisor = {
   savings(s) {
-    return s.income - (this.totalExpenses(s) + s.subscriptions);
+    return s.income - this.totalExpenses(s);
   },
   totalExpenses(s) {
     return Object.values(s.expenses).reduce((a,b) => a+b, 0);
@@ -33,10 +31,6 @@ const advisor = {
   expenseRatio(s) {
     if (!s.income) return 0;
     return this.totalExpenses(s) / s.income;
-  },
-  subscriptionRatio(s) {
-    if (!s.income) return 0;
-    return s.subscriptions / s.income;
   },
   emergencyFund(s) {
     return 3 * this.totalExpenses(s);
@@ -59,25 +53,19 @@ const advisor = {
     let score = 0;
     const sr = this.savingsRatio(s);
     const er = this.expenseRatio(s);
-    const subR = this.subscriptionRatio(s);
 
-    // Savings ratio contribution (max 40 points)
-    if (sr >= 0.30) score += 40;
-    else if (sr >= 0.20) score += 30;
-    else if (sr >= 0.10) score += 20;
-    else if (sr >= 0) score += 10;
+    // Savings ratio contribution (max 50 points)
+    if (sr >= 0.30) score += 50;
+    else if (sr >= 0.20) score += 40;
+    else if (sr >= 0.10) score += 30;
+    else if (sr >= 0) score += 15;
     else score += 0;
 
-    // Expense ratio contribution (max 30 points)
-    if (er <= 0.50) score += 30;
-    else if (er <= 0.65) score += 22;
-    else if (er <= 0.80) score += 14;
+    // Expense ratio contribution (max 35 points)
+    if (er <= 0.50) score += 35;
+    else if (er <= 0.65) score += 25;
+    else if (er <= 0.80) score += 15;
     else score += 5;
-
-    // Subscription ratio (max 15 points)
-    if (subR <= 0.05) score += 15;
-    else if (subR <= 0.10) score += 10;
-    else if (subR <= 0.15) score += 5;
 
     // Income present (max 15 points)
     if (s.income > 0) score += 15;
@@ -95,7 +83,6 @@ const advisor = {
     const sr = this.savingsRatio(s);
     const er = this.expenseRatio(s);
     const savings = this.savings(s);
-    const subR = this.subscriptionRatio(s);
 
     if (savings < 0) {
       recs.push({ icon: '🔴', text: '<strong>Critical:</strong> Your expenses exceed your income by ₹' + fmt(Math.abs(savings)) + '. Immediately cut non-essential spending.' });
@@ -111,9 +98,6 @@ const advisor = {
     }
     if (s.expenses.entertainment / s.income > 0.10) {
       recs.push({ icon: '🎬', text: '<strong>Entertainment Budget:</strong> Entertainment costs ' + pct(s.expenses.entertainment/s.income) + ' of income. Cap it at 10%.' });
-    }
-    if (subR > 0.10) {
-      recs.push({ icon: '📱', text: '<strong>Subscription Overload:</strong> Subscriptions eat ' + pct(subR) + ' of income (₹' + fmt(s.subscriptions) + '/mo). Review and cancel unused services.' });
     }
     if (savings > 0) {
       recs.push({ icon: '🏦', text: '<strong>Emergency Fund Goal:</strong> Build ₹' + fmt(this.emergencyFund(s)) + ' (3× expenses). Start a recurring deposit of ₹' + fmt(Math.min(savings * 0.5, this.emergencyFund(s)/6)) + '/month.' });
@@ -167,7 +151,6 @@ function initApp() {
   state.expenses.shopping = parseFloat(document.getElementById('ob-shop').value) || 0;
   state.expenses.entertainment = parseFloat(document.getElementById('ob-ent').value) || 0;
   state.expenses.other = parseFloat(document.getElementById('ob-other').value) || 0;
-  state.subscriptions = parseFloat(document.getElementById('ob-subs').value) || 0;
   state.risk = document.getElementById('ob-risk').value;
 
   // Populate expense tracker with the profile amounts on first setup.
@@ -203,15 +186,6 @@ function buildExpenseLogFromProfile() {
     }
   });
 
-  if (state.subscriptions > 0) {
-    entries.push({
-      id: Date.now() + 100,
-      desc: 'Subscription',
-      amount: state.subscriptions,
-      category: 'other',
-      date: today
-    });
-  }
 
   return entries;
 }
@@ -223,7 +197,6 @@ function renderAll() {
   renderDashboard();
   renderExpenses();
   renderGoals();
-  renderSubscriptions();
   renderInvestment();
   renderSimulator();
 }
@@ -235,9 +208,7 @@ function renderDashboard() {
   const s = state;
   const savings = advisor.savings(s);
   const totalExp = advisor.totalExpenses(s);
-  const totalExpWithSubs = totalExp + s.subscriptions;
-  const sr = advisor.savingsRatio(s);
-  const er = s.income ? totalExpWithSubs / s.income : 0;
+  const er = s.income ? totalExp / s.income : 0;
   const emFund = advisor.emergencyFund(s);
   const invest = advisor.investmentAllocation(s);
   const score = advisor.healthScore(s);
@@ -264,25 +235,20 @@ function renderDashboard() {
   document.getElementById('score-desc').textContent =
     score >= 75 ? 'Your finances are in great shape! Keep investing consistently.' :
     score >= 55 ? 'Good foundation. Focus on increasing savings rate and monitoring expenses.' :
-    score >= 35 ? 'Room for improvement. Review subscriptions and cut discretionary spending.' :
+    score >= 35 ? 'Room for improvement. Review your budget and cut discretionary spending.' :
     'Your finances need attention. Income may not cover expenses. Take action now.';
 
   // Score bars
   document.getElementById('score-bars').innerHTML = `
     <div class="score-bar-row">
       <span class="score-bar-label">Savings Rate</span>
-      <div class="score-bar-track"><div class="score-bar-fill" style="width:${Math.min(100, sr*100*2)}%; background:var(--accent)"></div></div>
-      <span class="score-bar-val">${(sr*100).toFixed(0)}%</span>
+      <div class="score-bar-track"><div class="score-bar-fill" style="width:${Math.min(100, advisor.savingsRatio(s)*100*2)}%; background:var(--accent)"></div></div>
+      <span class="score-bar-val">${(advisor.savingsRatio(s)*100).toFixed(0)}%</span>
     </div>
     <div class="score-bar-row">
       <span class="score-bar-label">Expense Control</span>
       <div class="score-bar-track"><div class="score-bar-fill" style="width:${Math.min(100,100-er*100)}%; background:var(--accent2)"></div></div>
       <span class="score-bar-val">${(100-er*100).toFixed(0)}%</span>
-    </div>
-    <div class="score-bar-row">
-      <span class="score-bar-label">Sub Management</span>
-      <div class="score-bar-track"><div class="score-bar-fill" style="width:${Math.max(0,100-(s.subscriptions/s.income)*100*2)}%; background:var(--accent3)"></div></div>
-      <span class="score-bar-val">${s.income ? (100-(s.subscriptions/s.income)*100).toFixed(0) : '—'}%</span>
     </div>
   `;
 
@@ -294,8 +260,8 @@ function renderDashboard() {
   // Summary cards
   document.getElementById('c-savings').textContent = (savings >= 0 ? '₹' : '-₹') + fmt(Math.abs(savings));
   document.getElementById('c-savings').style.color = savings >= 0 ? 'var(--accent)' : 'var(--danger)';
-  document.getElementById('c-savings-ratio').textContent = pct(sr) + ' savings ratio';
-  document.getElementById('c-expenses').textContent = '₹' + fmt(totalExpWithSubs);
+  document.getElementById('c-savings-ratio').textContent = pct(advisor.savingsRatio(s)) + ' savings ratio';
+  document.getElementById('c-expenses').textContent = '₹' + fmt(totalExp);
   document.getElementById('c-expense-ratio').textContent = pct(er) + ' expense ratio';
   document.getElementById('c-emergency').textContent = '₹' + fmt(emFund);
   document.getElementById('c-invest').textContent = invest > 0 ? '₹' + fmt(invest) : '₹0';
@@ -336,9 +302,9 @@ function buildExpenseDonut() {
 
 function buildBudgetBar() {
   const s = state;
-  const cats = ['Food', 'Travel', 'Shopping', 'Entertainment', 'Other', 'Subs'];
-  const actual = [s.expenses.food, s.expenses.travel, s.expenses.shopping, s.expenses.entertainment, s.expenses.other, s.subscriptions];
-  const budgetPct = [0.25, 0.10, 0.15, 0.10, 0.10, 0.10];
+  const cats = ['Food', 'Travel', 'Shopping', 'Entertainment', 'Other'];
+  const actual = [s.expenses.food, s.expenses.travel, s.expenses.shopping, s.expenses.entertainment, s.expenses.other];
+  const budgetPct = [0.25, 0.10, 0.15, 0.10, 0.15];
   const budget = budgetPct.map(p => s.income * p);
   if (charts.budgetBar) charts.budgetBar.destroy();
   const ctx = document.getElementById('budgetBar').getContext('2d');
@@ -495,71 +461,6 @@ function updateGoalProgress(id, val) {
   if (g) { g.saved = parseFloat(val); renderGoals(); }
 }
 
-// =============================================
-// SUBSCRIPTIONS
-// =============================================
-function renderSubscriptions() {
-  const active = state.subs.filter(s => s.active);
-  const unused = state.subs.filter(s => !s.active);
-  const activeCost = active.reduce((a,s) => a+s.cost, 0);
-  const unusedCost = unused.reduce((a,s) => a+s.cost, 0);
-
-  document.getElementById('sub-active-count').textContent = active.length;
-  document.getElementById('sub-active-cost').textContent = '₹'+fmt(activeCost)+'/month';
-  document.getElementById('sub-unused-count').textContent = unused.length;
-  document.getElementById('sub-unused-cost').textContent = '₹'+fmt(unusedCost)+' wasted/month';
-  document.getElementById('sub-annual').textContent = '₹'+fmt(activeCost*12);
-
-  // Warning
-  const warn = document.getElementById('sub-warning');
-  const warnText = document.getElementById('sub-warning-text');
-  if (unused.length > 0) {
-    warn.style.display = 'flex';
-    warnText.innerHTML = `You have <strong>${unused.length} unused subscription(s)</strong> costing ₹${fmt(unusedCost)}/month (₹${fmt(unusedCost*12)}/year). Cancel them to save ₹${fmt(unusedCost)}/month.`;
-  } else {
-    warn.style.display = 'none';
-  }
-
-  const catEmoji = { entertainment: '🎬', productivity: '💼', education: '📚', health: '🏃', other: '📦' };
-  document.getElementById('sub-list').innerHTML = state.subs.map(s => `
-    <div class="sub-item">
-      <div class="sub-logo" style="background: rgba(79,255,176,0.1)">${catEmoji[s.category]||'📦'}</div>
-      <div>
-        <div class="sub-name">${s.name}</div>
-        <div class="sub-cost">₹${fmt(s.cost)}/month · ${s.category}</div>
-      </div>
-      <div class="sub-actions">
-        <span class="badge ${s.active ? 'badge-green' : 'badge-red'}" style="font-size:10px;">${s.active ? 'In Use' : 'Unused'}</span>
-        <label class="toggle">
-          <input type="checkbox" ${s.active ? 'checked' : ''} onchange="toggleSub(${s.id}, this.checked)">
-          <span class="toggle-slider"></span>
-        </label>
-        <button class="btn btn-danger btn-sm" onclick="deleteSub(${s.id})">✕</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function addSubscription() {
-  const name = document.getElementById('sub-name').value.trim();
-  const cost = parseFloat(document.getElementById('sub-cost').value);
-  const category = document.getElementById('sub-cat').value;
-  if (!name || !cost) return;
-  state.subs.push({ id: Date.now(), name, cost, category, active: true });
-  document.getElementById('sub-name').value = '';
-  document.getElementById('sub-cost').value = '';
-  renderSubscriptions();
-}
-
-function toggleSub(id, active) {
-  const s = state.subs.find(s => s.id === id);
-  if (s) { s.active = active; renderSubscriptions(); }
-}
-
-function deleteSub(id) {
-  state.subs = state.subs.filter(s => s.id !== id);
-  renderSubscriptions();
-}
 
 // =============================================
 // INVESTMENT

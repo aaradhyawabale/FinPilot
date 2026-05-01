@@ -2,7 +2,6 @@
  * Controller for analysis, simulation, and goal planning APIs.
  */
 const User = require('../models/User');
-const Subscription = require('../models/Subscription');
 const Goal = require('../models/Goal');
 const { runFullAnalysis, calcGoalRequired, calcGoalMonthlySavings, calcSipFV } = require('../services/advisorEngine');
 
@@ -11,13 +10,10 @@ exports.getAnalysis = async (req, res) => {
     const user = await User.findById(req.params.userId);
     if (!user) return res.status(404).json({ success: false, error: 'User not found' });
 
-    const subs = await Subscription.find({ userId: user._id, isActive: true });
-    const subTotal = subs.reduce((sum, s) => sum + s.cost, 0);
 
     const analysisData = {
       income:        user.income,
       expenses:      user.expenses.toObject(),
-      subscriptions: subTotal,
       riskAppetite:  user.riskAppetite
     };
 

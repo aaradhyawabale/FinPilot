@@ -9,10 +9,10 @@
 // ─────────────────────────────────────────────────
 
 /**
- * Savings = Income − (Expenses + Subscriptions)
+ * Savings = Income − Expenses
  */
-const calcSavings = (income, totalExpenses, totalSubscriptions) =>
-  income - (totalExpenses + totalSubscriptions);
+const calcSavings = (income, totalExpenses) =>
+  income - totalExpenses;
 
 /**
  * Savings Ratio = Savings / Income
@@ -71,30 +71,24 @@ const calcGoalMonthlySavings = (goalAmount, months) => goalAmount / months;
 // ─────────────────────────────────────────────────
 // FINANCIAL HEALTH SCORE (0–100)
 // ─────────────────────────────────────────────────
-const calcHealthScore = (income, totalExpenses, subscriptions) => {
+const calcHealthScore = (income, totalExpenses) => {
   if (!income) return 0;
-  const savings = calcSavings(income, totalExpenses, subscriptions);
+  const savings = calcSavings(income, totalExpenses);
   const sr = calcSavingsRatio(savings, income);
   const er = calcExpenseRatio(totalExpenses, income);
-  const subR = income > 0 ? subscriptions / income : 0;
   let score = 0;
 
-  // Savings ratio — max 40 pts
-  if (sr >= 0.30)      score += 40;
-  else if (sr >= 0.20) score += 30;
-  else if (sr >= 0.10) score += 20;
-  else if (sr >= 0)    score += 10;
+  // Savings ratio — max 50 pts (increased from 40 to rebalance)
+  if (sr >= 0.30)      score += 50;
+  else if (sr >= 0.20) score += 40;
+  else if (sr >= 0.10) score += 30;
+  else if (sr >= 0)    score += 15;
 
-  // Expense control — max 30 pts
-  if (er <= 0.50)      score += 30;
-  else if (er <= 0.65) score += 22;
-  else if (er <= 0.80) score += 14;
+  // Expense control — max 35 pts (increased from 30)
+  if (er <= 0.50)      score += 35;
+  else if (er <= 0.65) score += 25;
+  else if (er <= 0.80) score += 15;
   else                 score += 5;
-
-  // Subscription management — max 15 pts
-  if (subR <= 0.05)      score += 15;
-  else if (subR <= 0.10) score += 10;
-  else if (subR <= 0.15) score += 5;
 
   // Has income — 15 pts
   if (income > 0) score += 15;
@@ -113,12 +107,11 @@ const getRiskLevel = (score) => {
 // ─────────────────────────────────────────────────
 // SMART RECOMMENDATIONS
 // ─────────────────────────────────────────────────
-const generateRecommendations = (income, expenses, subscriptions) => {
+const generateRecommendations = (income, expenses) => {
   const totalExp = Object.values(expenses).reduce((a, b) => a + b, 0);
-  const savings = calcSavings(income, totalExp, subscriptions);
+  const savings = calcSavings(income, totalExp);
   const sr = calcSavingsRatio(savings, income);
   const er = calcExpenseRatio(totalExp, income);
-  const subR = income > 0 ? subscriptions / income : 0;
   const invest = calcInvestmentAllocation(savings);
   const recs = [];
 
@@ -167,15 +160,6 @@ const generateRecommendations = (income, expenses, subscriptions) => {
       action: 'Set a hard limit of 10% on entertainment. Use free alternatives.'
     });
   }
-  if (subR > 0.10) {
-    recs.push({
-      priority: 'high',
-      icon: 'subscription',
-      title: 'Subscription Overload',
-      message: `Subscriptions consume ${(subR * 100).toFixed(1)}% of income (₹${subscriptions}/month).`,
-      action: 'Audit all subscriptions. Cancel any unused in the last 30 days.'
-    });
-  }
   if (savings > 0) {
     const emFund = calcEmergencyFund(totalExp);
     recs.push({
@@ -193,8 +177,8 @@ const generateRecommendations = (income, expenses, subscriptions) => {
 // ─────────────────────────────────────────────────
 // INVESTMENT ADVISORY
 // ─────────────────────────────────────────────────
-const getInvestmentPlan = (income, totalExpenses, subscriptions, riskAppetite) => {
-  const savings = calcSavings(income, totalExpenses, subscriptions);
+const getInvestmentPlan = (income, totalExpenses, riskAppetite) => {
+  const savings = calcSavings(income, totalExpenses);
   const emFund = calcEmergencyFund(totalExpenses);
   const sipAmount = calcInvestmentAllocation(savings);
   const ready = savings > 0;
@@ -240,23 +224,22 @@ const getInvestmentPlan = (income, totalExpenses, subscriptions, riskAppetite) =
 // FULL ANALYSIS
 // ─────────────────────────────────────────────────
 const runFullAnalysis = (userData) => {
-  const { income, expenses, subscriptions: subTotal, riskAppetite } = userData;
+  const { income, expenses, riskAppetite } = userData;
   const totalExpenses = Object.values(expenses || {}).reduce((a, b) => a + b, 0);
-  const savings = calcSavings(income, totalExpenses, subTotal);
+  const savings = calcSavings(income, totalExpenses);
   const savingsRatio = calcSavingsRatio(savings, income);
   const expenseRatio = calcExpenseRatio(totalExpenses, income);
-  const healthScore = calcHealthScore(income, totalExpenses, subTotal);
+  const healthScore = calcHealthScore(income, totalExpenses);
   const riskLevel = getRiskLevel(healthScore);
   const emergencyFund = calcEmergencyFund(totalExpenses);
   const investmentAllocation = calcInvestmentAllocation(savings);
-  const recommendations = generateRecommendations(income, expenses, subTotal);
-  const investmentPlan = getInvestmentPlan(income, totalExpenses, subTotal, riskAppetite || 'medium');
+  const recommendations = generateRecommendations(income, expenses);
+  const investmentPlan = getInvestmentPlan(income, totalExpenses, riskAppetite || 'medium');
 
   return {
     summary: {
       income,
       totalExpenses,
-      subscriptions: subTotal,
       savings,
       savingsRatio: parseFloat((savingsRatio * 100).toFixed(2)),
       expenseRatio: parseFloat((expenseRatio * 100).toFixed(2)),
