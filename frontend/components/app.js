@@ -140,6 +140,19 @@ const pct = n => (n * 100).toFixed(1) + '%';
 const catColors = { food: '#ff6b6b', travel: '#4ecdc4', shopping: '#ffe66d', entertainment: '#a29bfe', other: '#74b9ff' };
 const catIcons = { food: '🍛', travel: '🚌', shopping: '🛍', entertainment: '🎬', other: '📦' };
 
+function syncStateWithExpenses() {
+  // Reset categorized expenses
+  state.expenses = { food: 0, travel: 0, shopping: 0, entertainment: 0, other: 0 };
+  // Sum from log
+  state.expenseLog.forEach(exp => {
+    if (state.expenses.hasOwnProperty(exp.category)) {
+      state.expenses[exp.category] += exp.amount;
+    } else {
+      state.expenses.other += exp.amount;
+    }
+  });
+}
+
 // =============================================
 // INIT
 // =============================================
@@ -159,6 +172,7 @@ function initApp() {
   }
 
   document.getElementById('overlay').style.display = 'none';
+  syncStateWithExpenses();
   renderAll();
 }
 
@@ -393,12 +407,15 @@ function addExpense() {
   state.expenseLog.push({ id: Date.now(), desc, amount, category: cat, date: today });
   document.getElementById('exp-desc').value = '';
   document.getElementById('exp-amount').value = '';
-  renderExpenses();
+  
+  syncStateWithExpenses();
+  renderAll();
 }
 
 function deleteExpense(id) {
   state.expenseLog = state.expenseLog.filter(e => e.id !== id);
-  renderExpenses();
+  syncStateWithExpenses();
+  renderAll();
 }
 
 // =============================================
@@ -458,7 +475,7 @@ function deleteGoal(id) {
 
 function updateGoalProgress(id, val) {
   const g = state.goals.find(g => g.id === id);
-  if (g) { g.saved = parseFloat(val); renderGoals(); }
+  if (g) { g.saved = parseFloat(val); renderAll(); }
 }
 
 
