@@ -22,17 +22,21 @@ app.get("/", (req, res) => {
   res.json({ status: "FinPilot API is running", version: "1.0.0" });
 });
 
-async function startServer() {
+// Database connection middleware for serverless
+app.use(async (req, res, next) => {
   try {
     await connectDatabase();
-    console.log("MongoDB connected");
-    app.listen(PORT, () => {
-      console.log(`FinPilot API running on port ${PORT}`);
-    });
+    next();
   } catch (error) {
-    console.error("MongoDB connection error:", error.message);
-    process.exit(1);
+    res.status(500).json({ success: false, error: "Database connection failed" });
   }
+});
+
+if (process.env.NODE_ENV !== "production") {
+  const PORT = process.env.PORT || 5001;
+  app.listen(PORT, () => {
+    console.log(`FinPilot API running on port ${PORT}`);
+  });
 }
 
-startServer();
+module.exports = app;
