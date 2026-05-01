@@ -4,6 +4,7 @@
 // STATE
 // =============================================
 let state = {
+  userId: localStorage.getItem('finpilot_user_id'),
   name: 'Student',
   income: 0,
   expenses: { food: 0, travel: 0, shopping: 0, entertainment: 0, other: 0 },
@@ -11,6 +12,27 @@ let state = {
   expenseLog: [],
   goals: []
 };
+
+const API_BASE = 'http://localhost:5001/api';
+
+// Persistence Helpers
+async function apiCall(endpoint, method = 'GET', body = null) {
+  try {
+    const options = {
+      method,
+      headers: { 'Content-Type': 'application/json' }
+    };
+    if (body) options.body = JSON.stringify(body);
+    const res = await fetch(`${API_BASE}${endpoint}`, options);
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'API Error');
+    return json.data;
+  } catch (err) {
+    console.error(`API Error (${endpoint}):`, err);
+    // Optional: show a simple alert for critical errors
+    return null;
+  }
+}
 
 let charts = {};
 
@@ -182,19 +204,60 @@ function syncStateWithExpenses() {
 // =============================================
 // INIT
 // =============================================
-function initApp() {
-  state.name = document.getElementById('ob-name').value || 'Student';
-  state.income = parseFloat(document.getElementById('ob-income').value) || 0;
-  state.expenses.food = parseFloat(document.getElementById('ob-food').value) || 0;
-  state.expenses.travel = parseFloat(document.getElementById('ob-travel').value) || 0;
-  state.expenses.shopping = parseFloat(document.getElementById('ob-shop').value) || 0;
-  state.expenses.entertainment = parseFloat(document.getElementById('ob-ent').value) || 0;
-  state.expenses.other = parseFloat(document.getElementById('ob-other').value) || 0;
-  state.risk = document.getElementById('ob-risk').value;
+async function initApp() {
+  const userData = {
+    name: document.getElementById('ob-name').value || 'Student',
+    income: parseFloat(document.getElementById('ob-income').value) || 0,
+    expenses: {
+      food: parseFloat(document.getElementById('ob-food').value) || 0,
+      travel: parseFloat(document.getElementById('ob-travel').value) || 0,
+      shopping: parseFloat(document.getElementById('ob-shop').value) || 0,
+      entertainment: parseFloat(document.getElementById('ob-ent').value) || 0,
+      other: parseFloat(document.getElementById('ob-other').value) || 0
+    },
+    riskAppetite: document.getElementById('ob-risk').value
+  };
 
-  // Populate expense tracker with the profile amounts on first setup.
-  if (state.expenseLog.length === 0) {
-    state.expenseLog = buildExpenseLogFromProfile();
+  // Create or Update User in Backend
+  let user;
+  if (state.userId) {
+    user = await apiCall(`/user/${state.userId}`, 'PUT', userData);
+  } else {
+    user = await apiCall('/user', 'POST', userData);
+  }
+
+  if (user) {
+    state.userId = user._id;
+    localStorage.setItem('finpilot_user_id', user._id);
+    state.name = user.name;
+    state.income = user.income;
+    state.expenses = user.expenses;
+    state.risk = user.riskAppetite;
+
+    console.log('User initialized:', user);
+
+    // If first time (no logs), push profile expenses to backend
+    // Fetch current logs first to be sure
+    const currentLogs = await apiCall(`/expenses/${state.userId}`);
+    if (currentLogs && currentLogs.length === 0) {
+      console.log('No logs found, creating initial logs from profile...');
+      const initialLogs = buildExpenseLogFromProfile();
+      for (const log of initialLogs) {
+        if (log.amount > 0) {
+          await apiCall(`/expenses/${state.userId}`, 'POST', {
+            title: log.desc,
+            amount: log.amount,
+            category: log.category,
+            date: log.date
+          });
+        }
+      }
+      // Refresh log from backend after posting
+      const serverLogs = await apiCall(`/expenses/${state.userId}`);
+      if (serverLogs) state.expenseLog = serverLogs.map(l => ({ ...l, id: l._id, desc: l.title }));
+    } else if (currentLogs) {
+      state.expenseLog = currentLogs.map(l => ({ ...l, id: l._id, desc: l.title }));
+    }
   }
 
   document.getElementById('overlay').style.display = 'none';
@@ -387,7 +450,7 @@ function renderExpenses() {
       <td><span class="badge" style="background:${catColors[e.category]}22; color:${catColors[e.category]}">${catIcons[e.category]} ${e.category}</span></td>
       <td style="color:var(--text); font-family:'Space Mono',monospace; font-size:12px;">₹${fmt(e.amount)}</td>
       <td>${e.date}</td>
-      <td><button class="btn btn-danger btn-sm" onclick="deleteExpense(${e.id})">Delete</button></td>
+      <td><button class="btn btn-danger btn-sm" onclick="deleteExpense('${e.id}')">Delete</button></td>
     </tr>
   `).join('');
 
@@ -406,7 +469,10 @@ function renderExpenses() {
   for (let i=6; i>=0; i--) {
     const d = new Date(); d.setDate(d.getDate()-i);
     const ds = d.toISOString().split('T')[0];
-    last7.push({ label: d.toLocaleDateString('en-IN',{weekday:'short'}), total: log.filter(e=>e.date===ds).reduce((a,e)=>a+e.amount,0) });
+    last7.push({ 
+      label: d.toLocaleDateString('en-IN',{weekday:'short'}), 
+      total: log.filter(e => e.date && e.date.toString().split('T')[0] === ds).reduce((a,e) => a + e.amount, 0) 
+    });
   }
   if (charts.expTrend) charts.expTrend.destroy();
   const ctx = document.getElementById('expTrendLine').getContext('2d');
@@ -427,24 +493,36 @@ function renderExpenses() {
   });
 }
 
-function addExpense() {
+async function addExpense() {
   const desc = document.getElementById('exp-desc').value.trim();
   const amount = parseFloat(document.getElementById('exp-amount').value);
   const cat = document.getElementById('exp-cat').value;
   if (!desc || !amount) return;
-  const today = new Date().toISOString().split('T')[0];
-  state.expenseLog.push({ id: Date.now(), desc, amount, category: cat, date: today });
-  document.getElementById('exp-desc').value = '';
-  document.getElementById('exp-amount').value = '';
   
-  syncStateWithExpenses();
-  renderAll();
+  const today = new Date().toISOString().split('T')[0];
+  const newExp = await apiCall(`/expenses/${state.userId}`, 'POST', {
+    title: desc,
+    amount,
+    category: cat,
+    date: today
+  });
+
+  if (newExp) {
+    state.expenseLog.push({ ...newExp, id: newExp._id, desc: newExp.title });
+    document.getElementById('exp-desc').value = '';
+    document.getElementById('exp-amount').value = '';
+    syncStateWithExpenses();
+    renderAll();
+  }
 }
 
-function deleteExpense(id) {
-  state.expenseLog = state.expenseLog.filter(e => e.id !== id);
-  syncStateWithExpenses();
-  renderAll();
+async function deleteExpense(id) {
+  const success = await apiCall(`/expenses/${state.userId}/${id}`, 'DELETE');
+  if (success) {
+    state.expenseLog = state.expenseLog.filter(e => e.id !== id);
+    syncStateWithExpenses();
+    renderAll();
+  }
 }
 
 // =============================================
@@ -464,7 +542,7 @@ function renderGoals() {
             <div class="goal-target">Target: ₹${fmt(g.target)} · ${g.duration} months</div>
           </div>
           <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
-            <button class="btn btn-danger btn-sm" onclick="deleteGoal(${g.id})">✕</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteGoal('${g.id}')">✕</button>
             <span class="badge ${f.color}">${f.label}</span>
           </div>
         </div>
@@ -495,7 +573,7 @@ function renderGoals() {
         ` : ''}
 
         <div style="margin-top:16px;">
-          <input type="range" min="0" max="${g.target}" step="500" value="${g.saved}" style="width:100%; accent-color: var(--accent);" oninput="updateGoalProgress(${g.id}, this.value)">
+          <input type="range" min="0" max="${g.target}" step="500" value="${g.saved}" style="width:100%; accent-color: var(--accent);" oninput="updateGoalProgressUI('${g.id}', this.value)" onchange="updateGoalProgress('${g.id}', this.value)">
           <div style="font-size:10px; color:var(--text3); margin-top:4px; text-align:center;">Drag to update progress</div>
         </div>
       </div>
@@ -547,7 +625,7 @@ function scrollCarousel(id, offset) {
   if (el) el.scrollBy({ left: offset, behavior: 'smooth' });
 }
 
-function addGoal() {
+async function addGoal() {
   const name = document.getElementById('goal-name').value.trim();
   const target = parseFloat(document.getElementById('goal-target').value);
   const duration = parseInt(document.getElementById('goal-duration').value);
@@ -562,21 +640,47 @@ function addGoal() {
     }
   }
 
-  state.goals.push({ id: Date.now(), name, target, duration, saved: 0 });
-  document.getElementById('goal-name').value = '';
-  document.getElementById('goal-target').value = '';
-  document.getElementById('goal-duration').value = '';
-  renderAll();
+  const newGoal = await apiCall(`/goals/${state.userId}`, 'POST', {
+    name,
+    targetAmount: target,
+    duration
+  });
+
+  if (newGoal) {
+    state.goals.push({ ...newGoal, id: newGoal._id, target: newGoal.targetAmount, saved: newGoal.savedAmount });
+    document.getElementById('goal-name').value = '';
+    document.getElementById('goal-target').value = '';
+    document.getElementById('goal-duration').value = '';
+    renderAll();
+  }
 }
 
-function deleteGoal(id) {
-  state.goals = state.goals.filter(g => g.id !== id);
-  renderAll();
+async function deleteGoal(id) {
+  const success = await apiCall(`/goals/${state.userId}/${id}`, 'DELETE');
+  if (success) {
+    state.goals = state.goals.filter(g => g.id !== id);
+    renderAll();
+  }
 }
 
-function updateGoalProgress(id, val) {
+async function updateGoalProgress(id, val) {
   const g = state.goals.find(g => g.id === id);
-  if (g) { g.saved = parseFloat(val); renderAll(); }
+  if (g) {
+    const updated = await apiCall(`/goals/${state.userId}/${id}`, 'PUT', { savedAmount: parseFloat(val) });
+    if (updated) {
+      g.saved = updated.savedAmount;
+      renderAll();
+    }
+  }
+}
+
+function updateGoalProgressUI(id, val) {
+  const g = state.goals.find(g => g.id === id);
+  if (g) {
+    g.saved = parseFloat(val);
+    renderGoals();
+    renderGoalCarousel();
+  }
 }
 
 
@@ -734,3 +838,60 @@ function goToExpensesPage() {
   const expensesNav = document.getElementById('nav-expenses');
   showPage('expenses', expensesNav);
 }
+
+async function loadInitialData() {
+  const overlay = document.getElementById('overlay');
+  if (!state.userId) {
+    if (overlay) overlay.style.display = 'flex';
+    return;
+  }
+  
+  console.log('Loading initial data for user:', state.userId);
+  
+  // Hide overlay if we have a user
+  if (overlay) overlay.style.display = 'none';
+  
+  // Fetch user profile
+  const user = await apiCall(`/user/${state.userId}`);
+  if (user) {
+    state.name = user.name;
+    state.income = user.income;
+    state.expenses = user.expenses;
+    state.risk = user.riskAppetite;
+    
+    // Prefill overlay fields
+    if (document.getElementById('ob-name')) document.getElementById('ob-name').value = user.name;
+    if (document.getElementById('ob-income')) document.getElementById('ob-income').value = user.income;
+    if (document.getElementById('ob-food')) document.getElementById('ob-food').value = user.expenses.food;
+    if (document.getElementById('ob-travel')) document.getElementById('ob-travel').value = user.expenses.travel;
+    if (document.getElementById('ob-shop')) document.getElementById('ob-shop').value = user.expenses.shopping;
+    if (document.getElementById('ob-ent')) document.getElementById('ob-ent').value = user.expenses.entertainment;
+    if (document.getElementById('ob-other')) document.getElementById('ob-other').value = user.expenses.other;
+    if (document.getElementById('ob-risk')) document.getElementById('ob-risk').value = user.riskAppetite;
+  } else {
+    // If user not found, clear localStorage and show overlay
+    console.warn('User not found on server, resetting...');
+    localStorage.removeItem('finpilot_user_id');
+    state.userId = null;
+    if (overlay) overlay.style.display = 'flex';
+    return;
+  }
+
+  // Fetch Expenses
+  const expenses = await apiCall(`/expenses/${state.userId}`);
+  if (expenses) {
+    state.expenseLog = expenses.map(e => ({ ...e, id: e._id, desc: e.title }));
+  }
+
+  // Fetch Goals
+  const goals = await apiCall(`/goals/${state.userId}`);
+  if (goals) {
+    state.goals = goals.map(g => ({ ...g, id: g._id, target: g.targetAmount, saved: g.savedAmount }));
+  }
+
+  syncStateWithExpenses();
+  renderAll();
+}
+
+// Start the app
+loadInitialData();
