@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FinPilot – Student Financial Advisor Co-Pilot</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/main.css">
+
+</head>
+<body>
+
+<div id="overlay" class="overlay">
+  <div class="onboard-card">
+    <div class="onboard-step">Step 1 of 1 — Financial Profile Setup</div>
+    <div class="onboard-title">Welcome to FinPilot ✦</div>
+    <div class="onboard-sub">Your AI-powered student financial advisor. Enter your financial details to generate your personalized health score and recommendations.</div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Monthly Income (₹)</label>
+        <input type="number" class="form-input" id="ob-income" placeholder="e.g. 25000" value="25000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Name</label>
+        <input type="text" class="form-input" id="ob-name" placeholder="Your name" value="Arjun Sharma">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Food & Dining (₹)</label>
+        <input type="number" class="form-input" id="ob-food" placeholder="0" value="4500">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Travel (₹)</label>
+        <input type="number" class="form-input" id="ob-travel" placeholder="0" value="2000">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Shopping (₹)</label>
+        <input type="number" class="form-input" id="ob-shop" placeholder="0" value="3000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Entertainment (₹)</label>
+        <input type="number" class="form-input" id="ob-ent" placeholder="0" value="1500">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Other Expenses (₹)</label>
+        <input type="number" class="form-input" id="ob-other" placeholder="0" value="1200">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Total Subscriptions/mo (₹)</label>
+        <input type="number" class="form-input" id="ob-subs" placeholder="0" value="1200">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Risk Appetite</label>
+        <select class="form-select" id="ob-risk">
+          <option value="low">Low – I prefer safety</option>
+          <option value="medium" selected>Medium – Balanced approach</option>
+          <option value="high">High – I want growth</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" style="width:100%; margin-top:8px; padding: 13px;" onclick="initApp()">
+      Generate My Financial Profile →
+    </button>
+  </div>
+</div>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-mark">FinPilot</div>
+      <div class="logo-sub">Financial Advisor</div>
+    </div>
+    <div class="nav">
+      <div class="nav-section">Main</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="nav-icon">◈</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="showPage('expenses',this)">
+        <span class="nav-icon">◉</span> Expenses
+      </div>
+      <div class="nav-section">Planning</div>
+      <div class="nav-item" onclick="showPage('goals',this)">
+        <span class="nav-icon">◎</span> Goals
+      </div>
+      <div class="nav-item" onclick="showPage('subscriptions',this)">
+        <span class="nav-icon">◫</span> Subscriptions
+      </div>
+      <div class="nav-section">Insights</div>
+      <div class="nav-item" onclick="showPage('investment',this)">
+        <span class="nav-icon">◇</span> Investment
+      </div>
+      <div class="nav-item" onclick="showPage('simulator',this)">
+        <span class="nav-icon">◈</span> Simulator
+      </div>
+    </div>
+    <div class="sidebar-footer">
+      <div class="health-mini">
+        <div class="health-mini-label">Health Score</div>
+        <div class="health-mini-score" id="sidebar-score" style="color: var(--accent)">—</div>
+        <div style="font-size:11px; color: var(--text3); margin-top:3px;" id="sidebar-risk">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div class="main">
+
+    <!-- DASHBOARD -->
+    <div id="page-dashboard" class="page active">
+      <div class="page-header">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div class="page-title">Dashboard</div>
+            <div class="page-subtitle" id="dash-greeting">Welcome back</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="document.getElementById('overlay').style.display='flex'">Edit Profile</button>
+        </div>
+      </div>
+
+      <!-- Financial Health Score -->
+      <div class="score-card" id="score-card">
+        <div class="score-ring-wrap">
+          <svg class="score-ring-svg" width="110" height="110" viewBox="0 0 110 110">
+            <circle cx="55" cy="55" r="48" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="8"/>
+            <circle id="score-ring" cx="55" cy="55" r="48" fill="none" stroke="var(--accent)" stroke-width="8"
+              stroke-linecap="round" stroke-dasharray="301.6" stroke-dashoffset="301.6"
+              style="transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.5s"/>
+          </svg>
+          <div class="score-number">
+            <div class="score-big" id="score-val">—</div>
+            <div class="score-label">/100</div>
+          </div>
+        </div>
+        <div class="score-details">
+          <div style="display:flex; gap:10px; align-items:center; margin-bottom:6px;">
+            <div class="score-title">Financial Health Score</div>
+            <span class="badge" id="score-badge">—</span>
+          </div>
+          <div class="score-desc" id="score-desc">Analyzing your financial profile...</div>
+          <div class="score-bars" id="score-bars"></div>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="grid-4" id="summary-cards">
+        <div class="card">
+          <div class="card-title">Monthly Savings</div>
+          <div class="card-value" id="c-savings" style="color: var(--accent)">₹—</div>
+          <div class="card-sub" id="c-savings-ratio">—% savings ratio</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Total Expenses</div>
+          <div class="card-value" id="c-expenses" style="color: var(--danger)">₹—</div>
+          <div class="card-sub" id="c-expense-ratio">—% expense ratio</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Emergency Fund</div>
+          <div class="card-value" id="c-emergency" style="color: var(--warn)">₹—</div>
+          <div class="card-sub">3× monthly expenses</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Invest Monthly</div>
+          <div class="card-value" id="c-invest" style="color: var(--accent2)">₹—</div>
+          <div class="card-sub">30% of savings</div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid-2">
+        <div class="card">
+          <div class="section-header">
+            <div class="section-title">Expense Breakdown</div>
+            <span class="badge badge-blue" style="font-size:10px;">This Month</span>
+          </div>
+          <div class="chart-wrap" style="height:220px;">
+            <canvas id="expenseDonut" role="img" aria-label="Expense breakdown by category donut chart">Expense breakdown chart</canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-header">
+            <div class="section-title">Budget vs Actual</div>
+            <span class="badge badge-purple" style="font-size:10px;">Allocation</span>
+          </div>
+          <div class="chart-wrap" style="height:220px;">
+            <canvas id="budgetBar" role="img" aria-label="Budget vs actual spending bar chart">Budget comparison chart</canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recommendations -->
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">Smart Recommendations</div>
+          <span class="badge badge-green" id="rec-count">0 actions</span>
+        </div>
+        <div class="rec-list" id="rec-list"></div>
+      </div>
+    </div>
+
+    <!-- EXPENSES -->
+    <div id="page-expenses" class="page">
+      <div class="page-header">
+        <div class="page-title">Expense Tracker</div>
+        <div class="page-subtitle">Track and manage your spending by category</div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="section-title" style="margin-bottom:16px;">Add Expense</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <input type="text" class="form-input" id="exp-desc" placeholder="e.g. Lunch at canteen">
+          </div>
+          <div class="form-group" style="max-width:140px;">
+            <label class="form-label">Amount (₹)</label>
+            <input type="number" class="form-input" id="exp-amount" placeholder="0">
+          </div>
+          <div class="form-group" style="max-width:160px;">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="exp-cat">
+              <option value="food">🍛 Food & Dining</option>
+              <option value="travel">🚌 Travel</option>
+              <option value="shopping">🛍 Shopping</option>
+              <option value="entertainment">🎬 Entertainment</option>
+              <option value="other">📦 Other</option>
+            </select>
+          </div>
+          <div class="form-group" style="max-width:120px; display:flex; align-items:flex-end;">
+            <button class="btn btn-primary" style="width:100%" onclick="addExpense()">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:16px;">
+        <div class="card">
+          <div class="chart-wrap" style="height:220px;">
+            <canvas id="expTrendLine" role="img" aria-label="Expense trend line chart">Expense trend chart</canvas>
+          </div>
+        </div>
+        <div class="card">
+          <div class="section-title" style="margin-bottom:14px;">Category Summary</div>
+          <div id="cat-summary"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-header">
+          <div class="section-title">Recent Transactions</div>
+          <span class="badge badge-blue" id="exp-total-badge">Total: ₹0</span>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Description</th><th>Category</th><th>Amount</th><th>Date</th><th>Action</th></tr>
+            </thead>
+            <tbody id="exp-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- GOALS -->
+    <div id="page-goals" class="page">
+      <div class="page-header">
+        <div class="page-title">Goal Planning</div>
+        <div class="page-subtitle">Set financial targets and track your progress</div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="section-title" style="margin-bottom:16px;">Add New Goal</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Goal Name</label>
+            <input type="text" class="form-input" id="goal-name" placeholder="e.g. MacBook Pro, Emergency Fund">
+          </div>
+          <div class="form-group" style="max-width:150px;">
+            <label class="form-label">Target Amount (₹)</label>
+            <input type="number" class="form-input" id="goal-target" placeholder="50000">
+          </div>
+          <div class="form-group" style="max-width:130px;">
+            <label class="form-label">Duration (months)</label>
+            <input type="number" class="form-input" id="goal-duration" placeholder="12">
+          </div>
+          <div class="form-group" style="max-width:100px; display:flex; align-items:flex-end;">
+            <button class="btn btn-primary" style="width:100%" onclick="addGoal()">Add Goal</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-info">
+        <span>ℹ</span>
+        <div>Goals calculate required monthly savings using the Goal Planning formula: <strong>Required = Goal / (1 + r)^t</strong> — assuming a 6% annual return (0.5%/month).</div>
+      </div>
+
+      <div class="grid-3" id="goal-cards"></div>
+    </div>
+
+    <!-- SUBSCRIPTIONS -->
+    <div id="page-subscriptions" class="page">
+      <div class="page-header">
+        <div class="page-title">Subscription Tracker</div>
+        <div class="page-subtitle">Monitor recurring payments and eliminate waste</div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-title">Active Subscriptions</div>
+          <div class="card-value" id="sub-active-count" style="color: var(--accent2)">—</div>
+          <div class="card-sub" id="sub-active-cost">₹0/month</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Unused Subscriptions</div>
+          <div class="card-value" id="sub-unused-count" style="color: var(--danger)">—</div>
+          <div class="card-sub" id="sub-unused-cost">₹0 wasted/month</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Annual Cost</div>
+          <div class="card-value" id="sub-annual" style="color: var(--warn)">₹—</div>
+          <div class="card-sub">All active subscriptions</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="section-title" style="margin-bottom:16px;">Add Subscription</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Service Name</label>
+            <input type="text" class="form-input" id="sub-name" placeholder="e.g. Netflix, Spotify">
+          </div>
+          <div class="form-group" style="max-width:150px;">
+            <label class="form-label">Monthly Cost (₹)</label>
+            <input type="number" class="form-input" id="sub-cost" placeholder="199">
+          </div>
+          <div class="form-group" style="max-width:130px;">
+            <label class="form-label">Category</label>
+            <select class="form-select" id="sub-cat">
+              <option value="entertainment">Entertainment</option>
+              <option value="productivity">Productivity</option>
+              <option value="education">Education</option>
+              <option value="health">Health</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group" style="max-width:100px; display:flex; align-items:flex-end;">
+            <button class="btn btn-primary" style="width:100%" onclick="addSubscription()">Add</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="sub-warning" class="alert alert-warn" style="display:none;">
+        <span>⚠</span>
+        <div id="sub-warning-text"></div>
+      </div>
+
+      <div class="section-title" style="margin-bottom:12px;">Your Subscriptions</div>
+      <div id="sub-list"></div>
+    </div>
+
+    <!-- INVESTMENT -->
+    <div id="page-investment" class="page">
+      <div class="page-header">
+        <div class="page-title">Investment Advisory</div>
+        <div class="page-subtitle">Personalized investment suggestions based on your financial profile</div>
+      </div>
+
+      <div id="inv-readiness" class="card" style="margin-bottom:20px;">
+        <div class="section-title" style="margin-bottom:12px;">Investment Readiness</div>
+        <div id="inv-readiness-content"></div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-title">Recommended SIP Amount</div>
+          <div class="card-value" id="inv-sip" style="color: var(--accent)">₹—</div>
+          <div class="card-sub">Monthly systematic investment</div>
+        </div>
+        <div class="card">
+          <div class="card-title">5-Year SIP Projection</div>
+          <div class="card-value" id="inv-fv5" style="color: var(--accent2)">₹—</div>
+          <div class="card-sub">At 12% annual return</div>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-bottom:14px;">Recommended Investment Options</div>
+      <div class="grid-3" id="inv-cards"></div>
+
+      <div class="card" style="margin-top:20px;">
+        <div class="section-header">
+          <div class="section-title">SIP Growth Projection</div>
+          <span class="badge badge-green">12% CAGR</span>
+        </div>
+        <div class="chart-wrap" style="height:260px;">
+          <canvas id="sipChart" role="img" aria-label="SIP future value projection chart">SIP projection chart</canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIMULATOR -->
+    <div id="page-simulator" class="page">
+      <div class="page-header">
+        <div class="page-title">Future Financial Simulator</div>
+        <div class="page-subtitle">Visualize how your wealth grows over time with different scenarios</div>
+      </div>
+
+      <div class="sim-controls">
+        <div class="sim-slider-group">
+          <div class="sim-slider-top">
+            <span class="sim-slider-label">Monthly SIP</span>
+            <span class="sim-slider-val" id="sim-sip-val">₹2,000</span>
+          </div>
+          <input type="range" id="sim-sip" min="500" max="20000" step="500" value="2000" oninput="updateSimulator()">
+        </div>
+        <div class="sim-slider-group">
+          <div class="sim-slider-top">
+            <span class="sim-slider-label">Annual Return %</span>
+            <span class="sim-slider-val" id="sim-rate-val">12%</span>
+          </div>
+          <input type="range" id="sim-rate" min="4" max="20" step="1" value="12" oninput="updateSimulator()">
+        </div>
+        <div class="sim-slider-group">
+          <div class="sim-slider-top">
+            <span class="sim-slider-label">Duration (years)</span>
+            <span class="sim-slider-val" id="sim-yrs-val">10 yrs</span>
+          </div>
+          <input type="range" id="sim-yrs" min="1" max="30" step="1" value="10" oninput="updateSimulator()">
+        </div>
+      </div>
+
+      <div class="grid-3" style="margin-bottom:20px;">
+        <div class="card">
+          <div class="card-title">Total Invested</div>
+          <div class="card-value mono" id="sim-invested" style="color: var(--text2)">₹—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Wealth Gained</div>
+          <div class="card-value mono" id="sim-gained" style="color: var(--accent)">₹—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Final Corpus</div>
+          <div class="card-value mono" id="sim-corpus" style="color: var(--accent2)">₹—</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="chart-wrap" style="height:300px;">
+          <canvas id="simChart" role="img" aria-label="Wealth simulation growth chart over time">Wealth growth simulation chart</canvas>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="components/app.js"></script>

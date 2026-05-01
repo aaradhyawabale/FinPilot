@@ -1,5 +1,7 @@
-const User = require('../models/User');
-const { runFullAnalysis } = require('../services/advisorEngine');
+/**
+ * CRUD operations for user profile data.
+ */
+const User = require("../models/User");
 
 exports.createUser = async (req, res) => {
   try {

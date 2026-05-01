@@ -1,3 +1,6 @@
+/**
+ * Routes for expense management APIs.
+ */
 // routes/expenseRoutes.js
 const router = require('express').Router({ mergeParams: true });
 const { getExpenses, addExpense, updateExpense, deleteExpense } = require('../controllers/expenseController');

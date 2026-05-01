@@ -1,3 +1,6 @@
+/**
+ * Routes for subscription tracking APIs.
+ */
 const router = require('express').Router();
 const Subscription = require('../models/Subscription');
 

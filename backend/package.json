@@ -1,11 +1,11 @@
 {
-  "name": "finpilot-server",
+  "name": "finpilot-backend",
   "version": "1.0.0",
   "description": "FinPilot Student Financial Advisor API",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "node server.js",
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "cors": "^2.8.5",

@@ -1,3 +1,6 @@
+/**
+ * Routes for goal planning and goal CRUD APIs.
+ */
 const router = require('express').Router();
 const Goal = require('../models/Goal');
 const { calcGoalRequired, calcGoalMonthlySavings } = require('../services/advisorEngine');

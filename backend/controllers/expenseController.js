@@ -1,3 +1,6 @@
+/**
+ * Controller for expense CRUD and summaries.
+ */
 const Expense = require('../models/Expense');
 
 exports.getExpenses = async (req, res) => {

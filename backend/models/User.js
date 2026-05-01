@@ -1,3 +1,6 @@
+/**
+ * Mongoose schema for user financial profile data.
+ */
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({

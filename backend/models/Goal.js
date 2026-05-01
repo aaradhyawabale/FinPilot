@@ -1,3 +1,6 @@
+/**
+ * Mongoose schema for user financial goals.
+ */
 const mongoose = require('mongoose');
 
 const goalSchema = new mongoose.Schema({

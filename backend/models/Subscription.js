@@ -1,3 +1,6 @@
+/**
+ * Mongoose schema for recurring subscriptions.
+ */
 const mongoose = require('mongoose');
 
 const subscriptionSchema = new mongoose.Schema({

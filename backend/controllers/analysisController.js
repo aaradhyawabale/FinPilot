@@ -1,3 +1,6 @@
+/**
+ * Controller for analysis, simulation, and goal planning APIs.
+ */
 const User = require('../models/User');
 const Subscription = require('../models/Subscription');
 const Goal = require('../models/Goal');

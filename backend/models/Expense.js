@@ -1,3 +1,6 @@
+/**
+ * Mongoose schema for expense transaction records.
+ */
 const mongoose = require('mongoose');
 
 const expenseSchema = new mongoose.Schema({

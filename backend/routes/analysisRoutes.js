@@ -1,3 +1,6 @@
+/**
+ * Routes for financial analysis-related API endpoints.
+ */
 const router = require('express').Router();
 const { getAnalysis, simulateFuture, analyzeGoal } = require('../controllers/analysisController');
 
