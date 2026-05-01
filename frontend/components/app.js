@@ -170,37 +170,6 @@ function initApp() {
   state.subscriptions = parseFloat(document.getElementById('ob-subs').value) || 0;
   state.risk = document.getElementById('ob-risk').value;
 
-  // Default subscriptions
-  if (state.subs.length === 0) {
-    state.subs = [
-      { id: 1, name: 'Netflix', cost: 499, category: 'entertainment', active: true },
-      { id: 2, name: 'Spotify', cost: 119, category: 'entertainment', active: true },
-      { id: 3, name: 'LinkedIn Premium', cost: 2600, category: 'productivity', active: false },
-    ];
-  }
-
-  // Default goals
-  if (state.goals.length === 0) {
-    state.goals = [
-      { id: 1, name: 'Emergency Fund', target: advisor.emergencyFund(state), duration: 12, saved: 0 },
-      { id: 2, name: 'New Laptop', target: 60000, duration: 8, saved: 12000 },
-    ];
-  }
-
-  // Default expense log
-  if (state.expenseLog.length === 0) {
-    const today = new Date();
-    const days = [28,26,25,23,21,20,18,15,12,10,8,5,3,1];
-    const descs = ['Lunch','Bus pass','Amazon order','Movie night','Groceries','Uber','Zara shopping','OTT recharge','Dinner out','Auto','Books','Coffee','Pizza','Gym'];
-    const cats = ['food','travel','shopping','entertainment','food','travel','shopping','entertainment','food','travel','other','food','food','other'];
-    const amounts = [180,500,1200,350,800,250,2000,499,600,120,800,120,450,800];
-    descs.forEach((d,i) => {
-      const date = new Date(today);
-      date.setDate(today.getDate() - days[i]);
-      state.expenseLog.push({ id: i+1, desc: d, amount: amounts[i], category: cats[i], date: date.toISOString().split('T')[0] });
-    });
-  }
-
   document.getElementById('overlay').style.display = 'none';
   renderAll();
 }
