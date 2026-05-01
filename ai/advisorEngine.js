@@ -68,6 +68,21 @@ const calcGoalRequired = (goalAmount, months, annualRate = 0.06) => {
  */
 const calcGoalMonthlySavings = (goalAmount, months) => goalAmount / months;
 
+/**
+ * Goal Feasibility Check
+ */
+const calcGoalFeasibility = (goalAmount, months, availableSavings) => {
+  const monthlyNeeded = goalAmount / months;
+  const gap = monthlyNeeded - availableSavings;
+  const suggestedMonths = availableSavings > 0 ? Math.ceil(goalAmount / availableSavings) : 0;
+  
+  let status = 'feasible';
+  if (gap > 0) status = 'not-feasible';
+  else if (monthlyNeeded > 0.7 * availableSavings) status = 'moderate';
+  
+  return { monthlyNeeded, gap, suggestedMonths, status };
+};
+
 // ─────────────────────────────────────────────────
 // FINANCIAL HEALTH SCORE (0–100)
 // ─────────────────────────────────────────────────
@@ -257,7 +272,7 @@ const runFullAnalysis = (userData) => {
 module.exports = {
   calcSavings, calcSavingsRatio, calcExpenseRatio,
   calcEmergencyFund, calcInvestmentAllocation,
-  calcSipFV, calcGoalRequired, calcGoalMonthlySavings,
+  calcSipFV, calcGoalRequired, calcGoalMonthlySavings, calcGoalFeasibility,
   calcHealthScore, getRiskLevel,
   generateRecommendations, getInvestmentPlan,
   runFullAnalysis

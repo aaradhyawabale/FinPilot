@@ -133,13 +133,27 @@
   input[type="range"] { width: 100%; accent-color: var(--accent); cursor: pointer; }
 
 
+  /* Carousel */
+  .carousel-container { position: relative; margin-bottom: 24px; }
+  .carousel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  .carousel { display: flex; gap: 16px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px; scrollbar-width: none; -ms-overflow-style: none; }
+  .carousel::-webkit-scrollbar { display: none; }
+  .carousel-item { flex: 0 0 320px; scroll-snap-align: start; }
+  .carousel-nav { display: flex; gap: 8px; }
+  .carousel-btn { width: 32px; height: 32px; border-radius: 50%; background: var(--bg3); border: 1px solid var(--border); color: var(--text2); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; font-size: 14px; }
+  .carousel-btn:hover { background: var(--card-hover); color: var(--accent); border-color: var(--accent); }
+
   /* Goal card */
-  .goal-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; }
+  .goal-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 18px; transition: border-color 0.2s; }
+  .goal-card:hover { border-color: var(--border2); }
   .goal-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
   .goal-target { font-size: 12px; color: var(--text3); margin-bottom: 12px; }
   .goal-progress { height: 6px; background: rgba(255,255,255,0.07); border-radius: 3px; overflow: hidden; margin-bottom: 8px; }
   .goal-progress-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width 0.8s; }
   .goal-meta { display: flex; justify-content: space-between; font-size: 11px; color: var(--text3); }
+  .goal-stat-row { display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 6px; }
+  .goal-stat-label { color: var(--text3); }
+  .goal-stat-val { font-family: 'Space Mono', monospace; color: var(--text); }
 
   /* Investment cards */
   .inv-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px; padding: 20px; }

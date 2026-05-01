@@ -49,6 +49,27 @@ const advisor = {
     const t = years / 12; // convert months to years
     return goal / Math.pow(1 + annualRate, t);
   },
+  goalFeasibility(target, duration, availableSavings) {
+    const monthlyNeeded = target / duration;
+    const gap = monthlyNeeded - availableSavings;
+    const suggestedDuration = availableSavings > 0 ? Math.ceil(target / availableSavings) : 0;
+    
+    let status = 'feasible';
+    let color = 'badge-green';
+    let label = 'Easy';
+    
+    if (gap > 0) {
+      status = 'not-feasible';
+      color = 'badge-red';
+      label = 'Not Feasible';
+    } else if (monthlyNeeded > 0.7 * availableSavings) {
+      status = 'moderate';
+      color = 'badge-warn';
+      label = 'Moderate';
+    }
+    
+    return { monthlyNeeded, gap, suggestedDuration, status, color, label };
+  },
   healthScore(s) {
     let score = 0;
     const sr = this.savingsRatio(s);
@@ -139,6 +160,11 @@ const fmt = n => Math.round(n).toLocaleString('en-IN');
 const pct = n => (n * 100).toFixed(1) + '%';
 const catColors = { food: '#ff6b6b', travel: '#4ecdc4', shopping: '#ffe66d', entertainment: '#a29bfe', other: '#74b9ff' };
 const catIcons = { food: '🍛', travel: '🚌', shopping: '🛍', entertainment: '🎬', other: '📦' };
+
+function scrollCarousel(id, offset) {
+  const el = document.getElementById(id);
+  if (el) el.scrollBy({ left: offset, behavior: 'smooth' });
+}
 
 function syncStateWithExpenses() {
   // Reset categorized expenses
@@ -284,6 +310,9 @@ function renderDashboard() {
   buildExpenseDonut();
   buildBudgetBar();
 
+  // Goals Carousel
+  renderGoalCarousel();
+
   // Recommendations
   const recs = advisor.recommendations(s);
   document.getElementById('rec-count').textContent = recs.length + ' action' + (recs.length !== 1 ? 's' : '');
@@ -425,29 +454,47 @@ function renderGoals() {
   const s = state;
   const savings = advisor.savings(s);
   document.getElementById('goal-cards').innerHTML = state.goals.map(g => {
-    const required = advisor.goalRequired(g.target, g.duration);
-    const monthly = g.target / g.duration;
+    const f = advisor.goalFeasibility(g.target, g.duration, savings);
     const progress = Math.min(100, (g.saved / g.target) * 100);
-    const feasible = monthly <= savings;
     return `
       <div class="goal-card">
-        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;">
-          <div class="goal-name">${g.name}</div>
-          <button class="btn btn-danger btn-sm" onclick="deleteGoal(${g.id})">✕</button>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:10px;">
+          <div>
+            <div class="goal-name">${g.name}</div>
+            <div class="goal-target">Target: ₹${fmt(g.target)} · ${g.duration} months</div>
+          </div>
+          <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+            <button class="btn btn-danger btn-sm" onclick="deleteGoal(${g.id})">✕</button>
+            <span class="badge ${f.color}">${f.label}</span>
+          </div>
         </div>
-        <div class="goal-target">Target: ₹${fmt(g.target)} · ${g.duration} months</div>
+        
         <div class="goal-progress"><div class="goal-progress-fill" style="width:${progress}%"></div></div>
-        <div class="goal-meta">
+        <div class="goal-meta" style="margin-bottom:16px;">
           <span>₹${fmt(g.saved)} saved</span>
           <span>${progress.toFixed(1)}%</span>
         </div>
-        <div class="divider" style="margin:12px 0;"></div>
-        <div style="display:flex; flex-direction:column; gap:6px; font-size:12px;">
-          <div style="display:flex; justify-content:space-between;"><span style="color:var(--text3)">Monthly needed</span><span style="color:var(--text); font-family:'Space Mono',monospace;">₹${fmt(monthly)}</span></div>
-          <div style="display:flex; justify-content:space-between;"><span style="color:var(--text3)">Present value</span><span style="color:var(--accent2); font-family:'Space Mono',monospace;">₹${fmt(required)}</span></div>
-          <div style="display:flex; justify-content:space-between;"><span style="color:var(--text3)">Feasibility</span><span class="badge ${feasible ? 'badge-green' : 'badge-red'}" style="font-size:10px;">${feasible ? '✓ Achievable' : '⚠ Stretch'}</span></div>
+
+        <div class="goal-stat-row">
+          <span class="goal-stat-label">Monthly Required</span>
+          <span class="goal-stat-val">₹${fmt(f.monthlyNeeded)}</span>
         </div>
-        <div style="margin-top:12px;">
+        <div class="goal-stat-row">
+          <span class="goal-stat-label">Available Savings</span>
+          <span class="goal-stat-val" style="color:var(--accent)">₹${fmt(savings)}</span>
+        </div>
+        <div class="goal-stat-row">
+          <span class="goal-stat-label">Gap</span>
+          <span class="goal-stat-val" style="color:${f.gap > 0 ? 'var(--danger)' : 'var(--accent)'}">${f.gap > 0 ? '₹'+fmt(f.gap) : 'None'}</span>
+        </div>
+
+        ${f.status === 'not-feasible' ? `
+          <div class="alert alert-warn" style="margin:12px 0 0; padding:8px 12px; font-size:11px;">
+            Not feasible. Need ₹${fmt(f.monthlyNeeded)}/mo. Consider extending to <strong>${f.suggestedDuration} months</strong>.
+          </div>
+        ` : ''}
+
+        <div style="margin-top:16px;">
           <input type="range" min="0" max="${g.target}" step="500" value="${g.saved}" style="width:100%; accent-color: var(--accent);" oninput="updateGoalProgress(${g.id}, this.value)">
           <div style="font-size:10px; color:var(--text3); margin-top:4px; text-align:center;">Drag to update progress</div>
         </div>
@@ -456,21 +503,75 @@ function renderGoals() {
   }).join('');
 }
 
+function renderGoalCarousel() {
+  const container = document.getElementById('goal-carousel');
+  if (!container) return;
+  const s = state;
+  const savings = advisor.savings(s);
+  const section = document.getElementById('dash-goals-section');
+
+  if (s.goals.length === 0) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  container.innerHTML = s.goals.map(g => {
+    const f = advisor.goalFeasibility(g.target, g.duration, savings);
+    const progress = Math.min(100, (g.saved / g.target) * 100);
+    return `
+      <div class="carousel-item">
+        <div class="goal-card" style="min-height:160px; display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <div class="goal-name" style="margin-bottom:0;">${g.name}</div>
+              <span class="badge ${f.color}">${f.label}</span>
+            </div>
+            <div class="goal-progress"><div class="goal-progress-fill" style="width:${progress}%"></div></div>
+            <div class="goal-meta">
+              <span>₹${fmt(g.saved)} / ₹${fmt(g.target)}</span>
+              <span>${progress.toFixed(0)}%</span>
+            </div>
+          </div>
+          <div style="margin-top:14px; font-size:11px; color:var(--text3);">
+             <div style="display:flex; justify-content:space-between;"><span>Monthly Needed</span><span style="color:var(--text)">₹${fmt(f.monthlyNeeded)}</span></div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function scrollCarousel(id, offset) {
+  const el = document.getElementById(id);
+  if (el) el.scrollBy({ left: offset, behavior: 'smooth' });
+}
+
 function addGoal() {
   const name = document.getElementById('goal-name').value.trim();
   const target = parseFloat(document.getElementById('goal-target').value);
   const duration = parseInt(document.getElementById('goal-duration').value);
   if (!name || !target || !duration) return;
+
+  const savings = advisor.savings(state);
+  const f = advisor.goalFeasibility(target, duration, savings);
+
+  if (f.status === 'not-feasible') {
+    if (!confirm(`This goal is not feasible with your current savings of ₹${fmt(savings)}/month. You would need ₹${fmt(f.monthlyNeeded)}/month, or a duration of ${f.suggestedDuration} months. Add anyway?`)) {
+      return;
+    }
+  }
+
   state.goals.push({ id: Date.now(), name, target, duration, saved: 0 });
   document.getElementById('goal-name').value = '';
   document.getElementById('goal-target').value = '';
   document.getElementById('goal-duration').value = '';
-  renderGoals();
+  renderAll();
 }
 
 function deleteGoal(id) {
   state.goals = state.goals.filter(g => g.id !== id);
-  renderGoals();
+  renderAll();
 }
 
 function updateGoalProgress(id, val) {
