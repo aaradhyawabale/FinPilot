@@ -87,7 +87,7 @@
       <div class="nav-item active" onclick="showPage('dashboard',this)">
         <span class="nav-icon">◈</span> Dashboard
       </div>
-      <div class="nav-item" onclick="showPage('expenses',this)">
+      <div id="nav-expenses" class="nav-item" onclick="showPage('expenses',this)">
         <span class="nav-icon">◉</span> Expenses
       </div>
       <div class="nav-section">Planning</div>
@@ -160,7 +160,13 @@
           <div class="card-value" id="c-savings" style="color: var(--accent)">₹—</div>
           <div class="card-sub" id="c-savings-ratio">—% savings ratio</div>
         </div>
-        <div class="card">
+        <div
+          class="card"
+          id="total-expenses-card"
+          style="cursor:pointer;"
+          onclick="goToExpensesPage()"
+          title="Open Expense Tracker"
+        >
           <div class="card-title">Total Expenses</div>
           <div class="card-value" id="c-expenses" style="color: var(--danger)">₹—</div>
           <div class="card-sub" id="c-expense-ratio">—% expense ratio</div>

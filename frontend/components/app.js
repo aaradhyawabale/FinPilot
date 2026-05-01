@@ -170,8 +170,50 @@ function initApp() {
   state.subscriptions = parseFloat(document.getElementById('ob-subs').value) || 0;
   state.risk = document.getElementById('ob-risk').value;
 
+  // Populate expense tracker with the profile amounts on first setup.
+  if (state.expenseLog.length === 0) {
+    state.expenseLog = buildExpenseLogFromProfile();
+  }
+
   document.getElementById('overlay').style.display = 'none';
   renderAll();
+}
+
+function buildExpenseLogFromProfile() {
+  const today = new Date().toISOString().split('T')[0];
+  const entries = [];
+
+  const categoryEntries = [
+    { desc: 'Food', amount: state.expenses.food, category: 'food' },
+    { desc: 'Travel', amount: state.expenses.travel, category: 'travel' },
+    { desc: 'Shopping', amount: state.expenses.shopping, category: 'shopping' },
+    { desc: 'Entertainment', amount: state.expenses.entertainment, category: 'entertainment' },
+    { desc: 'Other', amount: state.expenses.other, category: 'other' }
+  ];
+
+  categoryEntries.forEach((entry, index) => {
+    if (entry.amount > 0) {
+      entries.push({
+        id: Date.now() + index,
+        desc: entry.desc,
+        amount: entry.amount,
+        category: entry.category,
+        date: today
+      });
+    }
+  });
+
+  if (state.subscriptions > 0) {
+    entries.push({
+      id: Date.now() + 100,
+      desc: 'Subscription',
+      amount: state.subscriptions,
+      category: 'other',
+      date: today
+    });
+  }
+
+  return entries;
 }
 
 // =============================================
@@ -193,8 +235,9 @@ function renderDashboard() {
   const s = state;
   const savings = advisor.savings(s);
   const totalExp = advisor.totalExpenses(s);
+  const totalExpWithSubs = totalExp + s.subscriptions;
   const sr = advisor.savingsRatio(s);
-  const er = advisor.expenseRatio(s);
+  const er = s.income ? totalExpWithSubs / s.income : 0;
   const emFund = advisor.emergencyFund(s);
   const invest = advisor.investmentAllocation(s);
   const score = advisor.healthScore(s);
@@ -252,7 +295,7 @@ function renderDashboard() {
   document.getElementById('c-savings').textContent = (savings >= 0 ? '₹' : '-₹') + fmt(Math.abs(savings));
   document.getElementById('c-savings').style.color = savings >= 0 ? 'var(--accent)' : 'var(--danger)';
   document.getElementById('c-savings-ratio').textContent = pct(sr) + ' savings ratio';
-  document.getElementById('c-expenses').textContent = '₹' + fmt(totalExp);
+  document.getElementById('c-expenses').textContent = '₹' + fmt(totalExpWithSubs);
   document.getElementById('c-expense-ratio').textContent = pct(er) + ' expense ratio';
   document.getElementById('c-emergency').textContent = '₹' + fmt(emFund);
   document.getElementById('c-invest').textContent = invest > 0 ? '₹' + fmt(invest) : '₹0';
@@ -666,4 +709,9 @@ function showPage(id, el) {
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   if(el) el.classList.add('active');
+}
+
+function goToExpensesPage() {
+  const expensesNav = document.getElementById('nav-expenses');
+  showPage('expenses', expensesNav);
 }
